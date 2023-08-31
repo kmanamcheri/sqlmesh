@@ -767,6 +767,49 @@ class SparkConnectionConfig(_ConnectionConfig):
         }
 
 
+class TrinoConnectionConfig(_ConnectionConfig):
+    """
+    Trino Connection Configuration.
+    """
+
+    host: str
+    user: str
+    password: str
+    catalog: str
+    schema_: str = Field(alias="schema")
+    concurrent_tasks: int = 1
+
+    type_: Literal["trino"] = Field(alias="type", default="trino")
+
+    @property
+    def _connection_kwargs_keys(self) -> t.Set[str]:
+        return {
+            "host",
+            "user",
+            "password",
+            "catalog",
+            "schema"
+        }
+
+    @property
+    def _engine_adapter(self) -> t.Type[EngineAdapter]:
+        return engine_adapter.TrinoEngineAdapter
+
+    @property
+    def _connection_factory(self) -> t.Callable:
+        def wrapper(*args, **kwargs):
+            from trino import dbapi
+            from trino.auth import BasicAuthentication
+            return dbapi.connect(
+                host=kwargs["host"],
+                user=kwargs["user"],
+                auth=BasicAuthentication(kwargs["user"], kwargs["password"]),
+                catalog=kwargs["catalog"],
+                schema=kwargs["schema"]
+            )
+        return wrapper
+
+
 ConnectionConfig = Annotated[
     t.Union[
         BigQueryConnectionConfig,
@@ -779,6 +822,7 @@ ConnectionConfig = Annotated[
         RedshiftConnectionConfig,
         SnowflakeConnectionConfig,
         SparkConnectionConfig,
+        TrinoConnectionConfig
     ],
     Field(discriminator="type_"),
 ]

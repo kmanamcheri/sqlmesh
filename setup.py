@@ -107,6 +107,9 @@ setup(
         "mssql": [
             "pymssql",
         ],
+        "trino": [
+            "trino",
+        ],
         "mysql": [
             "mysql-connector-python",
         ],
